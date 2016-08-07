@@ -155,7 +155,7 @@ public class ChangeAssemblyVersion extends Builder {
             for (FilePath f : build.getWorkspace().list(assemblyGlob))
             {
                 // Update the AssemblyVerion and AssemblyFileVersion
-                new ChangeTools(f, this.regexPattern, this.replacementPattern).Replace(version, listener);
+                new ChangeTools(f, TokenMacro.expandAll(build, listener, this.regexPattern), TokenMacro.expandAll(build, listener, this.replacementPattern)).Replace(version, listener);
                 
                 // Set new things, empty string being ok for them.
                 // TODO: Would we need a regex for these or just blast as we are doing now?
