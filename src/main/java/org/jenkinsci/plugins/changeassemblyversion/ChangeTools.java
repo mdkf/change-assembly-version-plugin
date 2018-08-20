@@ -1,6 +1,6 @@
 package org.jenkinsci.plugins.changeassemblyversion;
 
-import hudson.model.BuildListener;
+import hudson.model.TaskListener;
 import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -10,7 +10,7 @@ public class ChangeTools {
     ChangeTools() {
     }
 
-    public static String replaceOrAppend(String content, Pattern regexPattern, String replacement, String replacementPattern, BuildListener listener) throws IOException, InterruptedException {
+    public static String replaceOrAppend(String content, Pattern regexPattern, String replacement, String replacementPattern, TaskListener listener) throws IOException, InterruptedException {
         if (replacement != null && !replacement.isEmpty()) {
             //listener.getLogger().println(String.format("\t Replacement : %s", replacement));
             //String newContent = content.replaceAll(regexPattern.toString(), String.format(replacementPattern, replacement));
