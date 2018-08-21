@@ -90,8 +90,6 @@ public class ReplacementsTest {
         assertTrue(content.contains("AssemblyCopyright(\"MyCopyright"));
         assertTrue(content.contains("AssemblyTrademark(\"MyTrademark"));
         assertTrue(content.contains("AssemblyCulture(\"MyCulture"));
-        
-        assertTrue(builder.getAssemblyVersion().equals("$PREFIX.${BUILD_NUMBER}"));
     }
     
     @Test
@@ -125,6 +123,5 @@ public class ReplacementsTest {
         assertTrue(content,content.contains("AssemblyVersion(\"1.1.0."+buildNumber+"\""));
         content = build.getWorkspace().child(f2).readToString();
         assertTrue(content,content.contains("AssemblyVersion(\"13.1.1.976"));
-        assertTrue(builder.getAssemblyVersion().equals("$PREFIX.${BUILD_NUMBER}"));
     }
 }

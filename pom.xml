@@ -21,13 +21,13 @@
     <url>https://wiki.jenkins-ci.org/display/JENKINS/Change+Assembly+Version</url>
     <developers>
         <developer>
-            <id>slide_o_mix</id>
-            <name>Alex Earl</name>
-        </developer>
-        <developer>
             <id>mdkf</id>
             <name>Michael DK Fowler</name>
             <email>MichaelDKFowler@gmail.com</email>
+        </developer>
+        <developer>
+            <id>raphaelcouto</id>
+            <name>Raphael Couto</name>
         </developer>
         <developer>
             <id>lkobus</id>
