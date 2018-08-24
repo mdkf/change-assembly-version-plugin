@@ -21,11 +21,12 @@ public class ChangeTools {
             try {
                 m.group(); //throws illegalstate if no match was perfomred
             } catch (IllegalStateException ex) {
-                listener.getLogger().println("Addidng missing value");
-                content += System.lineSeparator() + String.format(replacementPattern, replacement);
+                String s=String.format(replacementPattern, replacement);
+                listener.getLogger().println("Addidng missing value "+s);
+                content += System.lineSeparator() + s;
             }
         } else {
-            listener.getLogger().println(String.format("Skipping replacement because replacemnt value is empty."));
+            //listener.getLogger().println(String.format("Skipping replacement because replacemnt value is empty."));
         }
         return content;
     }

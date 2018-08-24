@@ -9,6 +9,7 @@
         <java.level>7</java.level>
         <jenkins.version>1.642.4</jenkins.version>
         <jenkins-test-harness.version>2.39</jenkins-test-harness.version>
+        <findbugs.failOnError>false</findbugs.failOnError>
     </properties>
   
     <scm>

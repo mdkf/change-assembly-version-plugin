@@ -13,9 +13,12 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.Writer;
 import static java.lang.String.format;
+import java.util.Arrays;
 import static java.util.logging.Level.SEVERE;
 import java.util.logging.Logger;
 import static java.util.logging.Logger.getLogger;
@@ -75,6 +78,17 @@ public class ChangeAssemblyVersion extends Builder implements SimpleBuildStep {
     private final Pattern assemblyCopyrightRegex;
     private final Pattern assemblyTrademarkRegex;
     private final Pattern assemblyCultureRegex;
+    
+    private String expandedAssemblyVersion;
+    private String expandedAssemblyFileVersion;
+    private String expandedAssemblyInfoVersion;
+    private String expandedAssemblyTitle;
+    private String expandedAssemblyDescription;
+    private String expandedAssemblyCompany;
+    private String expandedAssemblyProduct;
+    private String expandedAssemblyCopyright;
+    private String expandedAssemblyTrademark;
+    private String expandedAssemblyCulture;
     
         /*
     private final String assemblyCultureString;
@@ -296,6 +310,25 @@ public class ChangeAssemblyVersion extends Builder implements SimpleBuildStep {
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         try {
+            try {
+                // Expand env variables and token macros
+                expandedAssemblyVersion = TokenMacro.expandAll(build, listener, this.assemblyVersion);
+                expandedAssemblyFileVersion = TokenMacro.expandAll(build, listener, this.assemblyFileVersion);
+                expandedAssemblyInfoVersion = TokenMacro.expandAll(build, listener, this.assemblyInformationalVersion);
+                expandedAssemblyTitle = TokenMacro.expandAll(build, listener, this.assemblyTitle);
+                expandedAssemblyDescription = TokenMacro.expandAll(build, listener, this.assemblyDescription);
+                expandedAssemblyCompany = TokenMacro.expandAll(build, listener, this.assemblyCompany);
+                expandedAssemblyProduct = TokenMacro.expandAll(build, listener, this.assemblyProduct);
+                expandedAssemblyCopyright = TokenMacro.expandAll(build, listener, this.assemblyCopyright);
+                expandedAssemblyTrademark = TokenMacro.expandAll(build, listener, this.assemblyTrademark);
+                expandedAssemblyCulture = TokenMacro.expandAll(build, listener, this.assemblyCulture);
+            } catch (IOException | InterruptedException | MacroEvaluationException ex) {
+                StringWriter sw = new StringWriter();
+                ex.printStackTrace(new PrintWriter(sw));
+                listener.getLogger().println(sw.toString());
+
+                throw new AbortException(sw.toString());
+            }
             perform(build, build.getWorkspace(), launcher, listener);
         } catch (AbortException ex) {
             return false;
@@ -323,41 +356,31 @@ public class ChangeAssemblyVersion extends Builder implements SimpleBuildStep {
     public void perform(Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener) throws AbortException {
         String assemblyGlob = this.assemblyFile == null || this.assemblyFile.isEmpty() ? "**/AssemblyInfo.cs" : this.assemblyFile;
 
-        if (build instanceof AbstractBuild) {
-            try {
-                // Expand env variables and token macros
-                assemblyGlob = TokenMacro.expandAll((AbstractBuild) build, listener, this.assemblyFile);
-                assemblyVersion = TokenMacro.expandAll((AbstractBuild) build, listener, this.assemblyVersion);
-                assemblyFileVersion = TokenMacro.expandAll((AbstractBuild) build, listener, this.assemblyFileVersion);
-                assemblyInformationalVersion = TokenMacro.expandAll((AbstractBuild) build, listener, this.assemblyInformationalVersion);
-                assemblyTitle = expandAll((AbstractBuild) build, listener, this.assemblyTitle);
-                assemblyDescription = TokenMacro.expandAll((AbstractBuild) build, listener, this.assemblyDescription);
-                assemblyCompany = TokenMacro.expandAll((AbstractBuild) build, listener, this.assemblyCompany);
-                assemblyProduct = TokenMacro.expandAll((AbstractBuild) build, listener, this.assemblyProduct);
-                assemblyCopyright = TokenMacro.expandAll((AbstractBuild) build, listener, this.assemblyCopyright);
-                assemblyTrademark = TokenMacro.expandAll((AbstractBuild) build, listener, this.assemblyTrademark);
-                assemblyCulture = TokenMacro.expandAll((AbstractBuild) build, listener, this.assemblyCulture);
-            } catch (IOException | InterruptedException | MacroEvaluationException ex) {
-                StringWriter sw = new StringWriter();
-                ex.printStackTrace(new PrintWriter(sw));
-                listener.getLogger().println(sw.toString());
-
-                throw new AbortException(sw.toString());
-            }
+        if (!(build instanceof AbstractBuild)) {    // if in pipleine, nothing was expanded
+            expandedAssemblyVersion = assemblyVersion;
+            expandedAssemblyFileVersion = this.assemblyFileVersion;
+            expandedAssemblyInfoVersion = this.assemblyInformationalVersion;
+            expandedAssemblyTitle = this.assemblyTitle;
+            expandedAssemblyDescription = this.assemblyDescription;
+            expandedAssemblyCompany = this.assemblyCompany;
+            expandedAssemblyProduct = this.assemblyProduct;
+            expandedAssemblyCopyright =this.assemblyCopyright;
+            expandedAssemblyTrademark = this.assemblyTrademark;
+            expandedAssemblyCulture = this.assemblyCulture;
         }
 
         // Log new expanded values
         listener.getLogger().println(format("Changing File(s): %s", assemblyGlob));
-        listener.getLogger().println(format("Assembly Version : %s", assemblyVersion));
-        listener.getLogger().println(format("Assembly File Version : %s", assemblyFileVersion));
-        listener.getLogger().println(format("Assembly Informational Version : %s", assemblyInformationalVersion));
-        listener.getLogger().println(format("Assembly Title : %s", assemblyTitle));
-        listener.getLogger().println(format("Assembly Description : %s", assemblyDescription));
-        listener.getLogger().println(format("Assembly Company : %s", assemblyCompany));
-        listener.getLogger().println(format("Assembly Product : %s", assemblyProduct));
-        listener.getLogger().println(format("Assembly Copyright : %s", assemblyCopyright));
-        listener.getLogger().println(format("Assembly Trademark : %s", assemblyTrademark));
-        listener.getLogger().println(format("Assembly Culture : %s", assemblyCulture));
+        listener.getLogger().println(format("Assembly Version : %s", expandedAssemblyVersion));
+        listener.getLogger().println(format("Assembly File Version : %s", expandedAssemblyFileVersion));
+        listener.getLogger().println(format("Assembly Informational Version : %s", expandedAssemblyInfoVersion));
+        listener.getLogger().println(format("Assembly Title : %s", expandedAssemblyTitle));
+        listener.getLogger().println(format("Assembly Description : %s", expandedAssemblyDescription));
+        listener.getLogger().println(format("Assembly Company : %s", expandedAssemblyCompany));
+        listener.getLogger().println(format("Assembly Product : %s", expandedAssemblyProduct));
+        listener.getLogger().println(format("Assembly Copyright : %s", expandedAssemblyCopyright));
+        listener.getLogger().println(format("Assembly Trademark : %s", expandedAssemblyTrademark));
+        listener.getLogger().println(format("Assembly Culture : %s", expandedAssemblyCulture));
 
         //FilePath workspace = build.getWorkspace();
         if (workspace == null) {
@@ -375,20 +398,22 @@ public class ChangeAssemblyVersion extends Builder implements SimpleBuildStep {
                         charset = bs.getBOMCharsetName();
                         content = org.apache.commons.io.IOUtils.toString(bs);
                     }
-                    content = replaceOrAppend(content, assemblyVersionRegex, assemblyVersion, assemblyVersionReplacementString, listener);
-                    content = replaceOrAppend(content, assemblyFileVersionRegex, assemblyFileVersion, assemblyFileVersionReplacementString, listener);
-                    content = replaceOrAppend(content, assemblyInfoVersionRegex, assemblyInformationalVersion, assemblyInfoVersionReplacementString, listener);
-                    content = replaceOrAppend(content, assemblyTitleRegex, assemblyTitle, assemblyTitleReplacmentString, listener);
-                    content = replaceOrAppend(content, assemblyDescriptionRegex, assemblyDescription, assemblyDescriptionReplacementString, listener);
-                    content = replaceOrAppend(content, assemblyCompanyRegex, assemblyCompany, assemblyCompanyReplacementString, listener);
-                    content = replaceOrAppend(content, assemblyProductRegex, assemblyProduct, assemblyProductReplacmentString, listener);
-                    content = replaceOrAppend(content, assemblyCopyrightRegex, assemblyCopyright, assemblyCopyrightReplacementString, listener);
-                    content = replaceOrAppend(content, assemblyTrademarkRegex, assemblyTrademark, assemblyTrademarkReplacementString, listener);
-                    content = replaceOrAppend(content, assemblyCultureRegex, assemblyCulture, assemblyCultureReplacementString, listener);
+
+                    content = replaceOrAppend(content, assemblyVersionRegex, expandedAssemblyVersion, assemblyVersionReplacementString, listener);
+                    content = replaceOrAppend(content, assemblyFileVersionRegex, expandedAssemblyFileVersion, assemblyFileVersionReplacementString, listener);
+                    content = replaceOrAppend(content, assemblyInfoVersionRegex, expandedAssemblyInfoVersion, assemblyInfoVersionReplacementString, listener);
+                    content = replaceOrAppend(content, assemblyTitleRegex, expandedAssemblyTitle, assemblyTitleReplacmentString, listener);
+                    content = replaceOrAppend(content, assemblyDescriptionRegex, expandedAssemblyDescription, assemblyDescriptionReplacementString, listener);
+                    content = replaceOrAppend(content, assemblyCompanyRegex, expandedAssemblyCompany, assemblyCompanyReplacementString, listener);
+                    content = replaceOrAppend(content, assemblyProductRegex, expandedAssemblyProduct, assemblyProductReplacmentString, listener);
+                    content = replaceOrAppend(content, assemblyCopyrightRegex, expandedAssemblyCopyright, assemblyCopyrightReplacementString, listener);
+                    content = replaceOrAppend(content, assemblyTrademarkRegex, expandedAssemblyTrademark, assemblyTrademarkReplacementString, listener);
+                    content = replaceOrAppend(content, assemblyCultureRegex, expandedAssemblyCulture, assemblyCultureReplacementString, listener);
+                    
                     f.write(content, charset);
                 }
             } catch (IOException | InterruptedException ex) {
-                LOG.log(SEVERE, null, ex);
+                throw new AbortException(ex.getMessage());
             }
         }
     }
