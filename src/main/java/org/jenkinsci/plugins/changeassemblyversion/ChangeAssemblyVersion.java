@@ -13,13 +13,11 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.Writer;
 import static java.lang.String.format;
-import java.util.Arrays;
-import static java.util.logging.Level.SEVERE;
+import java.nio.charset.Charset;
 import java.util.logging.Logger;
 import static java.util.logging.Logger.getLogger;
 import java.util.regex.Pattern;
@@ -30,7 +28,6 @@ import org.apache.commons.io.input.BOMInputStream;
 import org.jenkinsci.Symbol;
 import static org.jenkinsci.plugins.changeassemblyversion.ChangeTools.replaceOrAppend;
 import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
-import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 import static org.jenkinsci.plugins.tokenmacro.TokenMacro.expandAll;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -312,16 +309,16 @@ public class ChangeAssemblyVersion extends Builder implements SimpleBuildStep {
         try {
             try {
                 // Expand env variables and token macros
-                expandedAssemblyVersion = TokenMacro.expandAll(build, listener, this.assemblyVersion);
-                expandedAssemblyFileVersion = TokenMacro.expandAll(build, listener, this.assemblyFileVersion);
-                expandedAssemblyInfoVersion = TokenMacro.expandAll(build, listener, this.assemblyInformationalVersion);
-                expandedAssemblyTitle = TokenMacro.expandAll(build, listener, this.assemblyTitle);
-                expandedAssemblyDescription = TokenMacro.expandAll(build, listener, this.assemblyDescription);
-                expandedAssemblyCompany = TokenMacro.expandAll(build, listener, this.assemblyCompany);
-                expandedAssemblyProduct = TokenMacro.expandAll(build, listener, this.assemblyProduct);
-                expandedAssemblyCopyright = TokenMacro.expandAll(build, listener, this.assemblyCopyright);
-                expandedAssemblyTrademark = TokenMacro.expandAll(build, listener, this.assemblyTrademark);
-                expandedAssemblyCulture = TokenMacro.expandAll(build, listener, this.assemblyCulture);
+                expandedAssemblyVersion = expandAll(build, listener, this.assemblyVersion);
+                expandedAssemblyFileVersion = expandAll(build, listener, this.assemblyFileVersion);
+                expandedAssemblyInfoVersion = expandAll(build, listener, this.assemblyInformationalVersion);
+                expandedAssemblyTitle = expandAll(build, listener, this.assemblyTitle);
+                expandedAssemblyDescription = expandAll(build, listener, this.assemblyDescription);
+                expandedAssemblyCompany = expandAll(build, listener, this.assemblyCompany);
+                expandedAssemblyProduct = expandAll(build, listener, this.assemblyProduct);
+                expandedAssemblyCopyright = expandAll(build, listener, this.assemblyCopyright);
+                expandedAssemblyTrademark = expandAll(build, listener, this.assemblyTrademark);
+                expandedAssemblyCulture = expandAll(build, listener, this.assemblyCulture);
             } catch (IOException | InterruptedException | MacroEvaluationException ex) {
                 StringWriter sw = new StringWriter();
                 ex.printStackTrace(new PrintWriter(sw));
@@ -395,7 +392,8 @@ public class ChangeAssemblyVersion extends Builder implements SimpleBuildStep {
                     try (InputStream is = f.read()) {
                         BOMInputStream bs = new BOMInputStream(is); //removes BOM
                         bom = bs.getBOM();    //save the BOM to resinsert later
-                        charset = bs.getBOMCharsetName();
+                        //charset = bs.getBOMCharsetName();
+                        charset = bom == null ? Charset.defaultCharset().name() : bom.getCharsetName();
                         content = org.apache.commons.io.IOUtils.toString(bs);
                     }
 
@@ -410,7 +408,16 @@ public class ChangeAssemblyVersion extends Builder implements SimpleBuildStep {
                     content = replaceOrAppend(content, assemblyTrademarkRegex, expandedAssemblyTrademark, assemblyTrademarkReplacementString, listener);
                     content = replaceOrAppend(content, assemblyCultureRegex, expandedAssemblyCulture, assemblyCultureReplacementString, listener);
                     
-                    f.write(content, charset);
+                    try (OutputStream out = f.write()) {
+                        if (bom != null){
+                            out.write(bom.getBytes());
+                        }
+                        out.write(content.getBytes(charset));
+                        out.flush();
+                    }
+                    catch (Exception ex){
+                        listener.getLogger().println(ex.getMessage());
+                    }
                 }
             } catch (IOException | InterruptedException ex) {
                 throw new AbortException(ex.getMessage());
