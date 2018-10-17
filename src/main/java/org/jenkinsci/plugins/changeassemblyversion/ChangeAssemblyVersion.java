@@ -390,11 +390,12 @@ public class ChangeAssemblyVersion extends Builder implements SimpleBuildStep {
                     String charset;
                     String content;
                     try (InputStream is = f.read()) {
-                        BOMInputStream bs = new BOMInputStream(is); //removes BOM
+                        BOMInputStream bs = new BOMInputStream(is,ByteOrderMark.UTF_8, ByteOrderMark.UTF_16BE,
+        ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_32BE, ByteOrderMark.UTF_32LE); //removes BOM
                         bom = bs.getBOM();    //save the BOM to resinsert later
                         //charset = bs.getBOMCharsetName();
                         charset = bom == null ? Charset.defaultCharset().name() : bom.getCharsetName();
-                        content = org.apache.commons.io.IOUtils.toString(bs);
+                        content = org.apache.commons.io.IOUtils.toString(bs,charset);
                     }
 
                     content = replaceOrAppend(content, assemblyVersionRegex, expandedAssemblyVersion, assemblyVersionReplacementString, listener);
